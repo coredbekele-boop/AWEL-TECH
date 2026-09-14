@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile containing identity, plan, and role details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID (auth uid)" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "name": { "type": "string", "description": "Full name or display handle" },
+        "avatarUrl": { "type": "string", "description": "Profile picture URL" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "Platform privilege tier" },
+        "plan": { "type": "string", "enum": ["free", "pro", "enterprise"], "description": "Subscription tier" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "email", "name", "role", "plan", "createdAt"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Android app project configuration synthesized from a website",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique project identifier" },
+        "userId": { "type": "string", "description": "Creator user UID" },
+        "name": { "type": "string", "description": "App display name" },
+        "websiteUrl": { "type": "string", "description": "Target website URL" },
+        "packageName": { "type": "string", "description": "Android reverse domain package name" },
+        "description": { "type": "string", "description": "App description" },
+        "iconUrl": { "type": "string", "description": "App launcher icon URL" },
+        "splashUrl": { "type": "string", "description": "Splash screen asset URL" },
+        "primaryColor": { "type": "string", "description": "Brand primary theme hex" },
+        "secondaryColor": { "type": "string", "description": "Brand secondary accent hex" },
+        "statusBarColor": { "type": "string", "description": "Android status bar color" },
+        "navBarColor": { "type": "string", "description": "Android navigation bar color" },
+        "splashBgColor": { "type": "string", "description": "Splash screen background color" },
+        "navigationType": { "type": "string", "enum": ["none", "bottom", "top", "drawer", "fullscreen"], "description": "Navigation chrome mode" },
+        "orientation": { "type": "string", "enum": ["portrait", "landscape", "auto"], "description": "Screen orientation constraint" },
+        "versionName": { "type": "string", "description": "Semantic release version" },
+        "versionCode": { "type": "integer", "description": "Android version code integer" },
+        "minSdk": { "type": "integer", "description": "Minimum Android API level" },
+        "targetSdk": { "type": "integer", "description": "Target Android API level" },
+        "keepScreenOn": { "type": "boolean", "description": "Keep screen awake flag" },
+        "cacheMode": { "type": "string", "enum": ["LOAD_DEFAULT", "LOAD_CACHE_ELSE_NETWORK", "LOAD_NO_CACHE"], "description": "WebView caching strategy" },
+        "userAgentSuffix": { "type": "string", "description": "Custom User-Agent header suffix" },
+        "hardwareAccelerated": { "type": "boolean", "description": "WebView hardware acceleration flag" },
+        "customCss": { "type": "string", "description": "Injected CSS override stylesheet" },
+        "customJs": { "type": "string", "description": "Injected JavaScript bootstrap script" },
+        "status": { "type": "string", "enum": ["draft", "ready", "building", "published"], "description": "Lifecycle state" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last modified timestamp" }
+      },
+      "required": ["id", "userId", "name", "websiteUrl", "packageName", "createdAt", "updatedAt"]
+    },
+    "Build": {
+      "title": "Build",
+      "description": "Android APK/AAB build job artifacts and logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique build ID" },
+        "projectId": { "type": "string", "description": "Associated project ID" },
+        "appName": { "type": "string", "description": "App name snapshot" },
+        "packageName": { "type": "string", "description": "Package name snapshot" },
+        "websiteUrl": { "type": "string", "description": "Target website URL snapshot" },
+        "userId": { "type": "string", "description": "User UID who requested the build" },
+        "buildType": { "type": "string", "enum": ["apk", "bundle", "both"], "description": "Target binary format" },
+        "status": { "type": "string", "enum": ["QUEUED", "PREPARING", "BUILDING", "SIGNING", "UPLOADING", "COMPLETED", "FAILED"], "description": "Build pipeline status" },
+        "progress": { "type": "integer", "description": "Completion percentage 0-100" },
+        "stepDescription": { "type": "string", "description": "Current pipeline step description" },
+        "apkUrl": { "type": "string", "description": "Download URL for release APK" },
+        "aabUrl": { "type": "string", "description": "Download URL for Google Play AAB" },
+        "sourceZipUrl": { "type": "string", "description": "Download URL for Android Studio project source ZIP" },
+        "fileSizeBytes": { "type": "integer", "description": "Compiled package size in bytes" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Initiation timestamp" },
+        "completedAt": { "type": "string", "format": "date-time", "description": "Completion timestamp" }
+      },
+      "required": ["id", "projectId", "userId", "buildType", "status", "progress", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User alert regarding build statuses or system notices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Notification ID" },
+        "userId": { "type": "string", "description": "Recipient user UID" },
+        "title": { "type": "string", "description": "Brief notification title" },
+        "message": { "type": "string", "description": "Descriptive message" },
+        "type": { "type": "string", "enum": ["info", "success", "warning", "error"], "description": "Alert category" },
+        "read": { "type": "boolean", "description": "Read status flag" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "link": { "type": "string", "description": "Optional navigation deep link" }
+      },
+      "required": ["id", "userId", "title", "message", "type", "read", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User account documents keyed by Auth UID"
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Mobile app projects created by platform users"
+    },
+    "/builds/{buildId}": {
+      "schema": { "$ref": "#/entities/Build" },
+      "description": "Compilation pipeline runs and output artifacts"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "User specific notifications and build status alerts"
+    }
+  }
+}

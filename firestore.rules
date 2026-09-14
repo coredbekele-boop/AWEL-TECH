@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // -------------------------------------------------------------------------
+    // Users Collection
+    // -------------------------------------------------------------------------
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      function isValidUserCreate(data) {
+        return data.keys().hasAll(['id', 'email', 'name', 'role', 'plan', 'createdAt']) &&
+          data.id == request.auth.uid &&
+          data.email is string && data.email.size() <= 254 &&
+          data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+          data.role == 'user' &&
+          data.plan in ['free', 'pro', 'enterprise'] &&
+          data.createdAt is string && data.createdAt.size() <= 35;
+      }
+
+      allow create: if isOwner(userId) && isValidUserCreate(incoming());
+
+      allow update: if (isOwner(userId) &&
+        !incoming().diff(existing()).affectedKeys().hasAny(['role', 'id', 'createdAt']) &&
+        incoming().name is string && incoming().name.size() <= 100
+      ) || isAdmin();
+
+      allow delete: if isAdmin();
+
+      // Notifications Subcollection
+      match /notifications/{notificationId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) || isAdmin();
+        allow update: if isOwner(userId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Projects Collection
+    // -------------------------------------------------------------------------
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      function isValidProject(data) {
+        return data.keys().hasAll(['id', 'userId', 'name', 'websiteUrl', 'packageName', 'createdAt', 'updatedAt']) &&
+          data.userId == request.auth.uid &&
+          data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+          data.websiteUrl is string && data.websiteUrl.size() > 0 && data.websiteUrl.size() <= 2048 &&
+          data.packageName is string && data.packageName.size() >= 3 && data.packageName.size() <= 150 &&
+          data.createdAt is string && data.createdAt.size() <= 35 &&
+          data.updatedAt is string && data.updatedAt.size() <= 35;
+      }
+
+      allow create: if isSignedIn() &&
+        isValidId(projectId) &&
+        isValidProject(incoming());
+
+      allow update: if isSignedIn() &&
+        isValidId(projectId) &&
+        (resource.data.userId == request.auth.uid || isAdmin()) &&
+        !incoming().diff(existing()).affectedKeys().hasAny(['id', 'userId', 'createdAt']) &&
+        incoming().updatedAt is string;
+
+      allow delete: if isSignedIn() &&
+        isValidId(projectId) &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // -------------------------------------------------------------------------
+    // Builds Collection
+    // -------------------------------------------------------------------------
+    match /builds/{buildId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      function isValidBuild(data) {
+        return data.keys().hasAll(['id', 'projectId', 'userId', 'buildType', 'status', 'progress', 'createdAt']) &&
+          data.userId == request.auth.uid &&
+          data.projectId is string && data.projectId.size() <= 128 &&
+          data.buildType in ['apk', 'bundle', 'both'] &&
+          data.status in ['QUEUED', 'PREPARING', 'BUILDING', 'SIGNING', 'UPLOADING', 'COMPLETED', 'FAILED'] &&
+          data.progress is int && data.progress >= 0 && data.progress <= 100 &&
+          data.createdAt is string && data.createdAt.size() <= 35;
+      }
+
+      allow create: if isSignedIn() &&
+        isValidId(buildId) &&
+        isValidBuild(incoming());
+
+      allow update: if isSignedIn() &&
+        isValidId(buildId) &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow delete: if isAdmin();
+    }
+
+    // Admins Collection (Restricted)
+    match /admins/{adminId} {
+      allow read, write: if false; // Only manageable via Cloud Console / Admin SDK
+    }
+  }
+}

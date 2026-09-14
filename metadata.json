@@ -1,0 +1,6 @@
+{
+  "name": "Web2APK Studio",
+  "description": "Production SaaS platform to convert websites into customizable Android apps with live preview, deep metadata analysis, and build pipeline.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
